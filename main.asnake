@@ -29,13 +29,18 @@ bool deleteDangerousMessage True
 const int amount_of_detections = int(open("amount_of_detections.txt",'r').read())
 
 RETelegramUsername = re.compile(r"@[a-zA-z0-9]{5,}")
-REDiscordLink = re.compile(r"(?:https?:\/\/)?discord\.gg\/[0-9a-zA-Z]{7,}")
+REDiscordLink = re.compile(r"(?:https?:\/\/)?(?:(?:discord\.gg)|(?:discordapp\.com\/invite))\/[0-9a-zA-Z]{7,}")
 const tuple RECompiles = (
         (RETelegramUsername, '@Suspicious_Username'),
         (REDiscordLink,      'discord.gg/1A2b3cD4'),
    )
 
-const set bannedLinks = {"steanmnscommunity.com","greyapp.page.link","restorecord.com","easypeasy.bot"}
+const set bannedLinks = { "steanmnscommunity.com",
+                          "greyapp.page.link",
+                          "restorecord.com",
+                          "easypeasy.bot",
+                          "nitroshop.cc"
+                         }
 
 applyRegexToString does str
     loop RECompiles regex
@@ -94,12 +99,15 @@ async scanMessage does bool
         for attachment in message.attachments
             if attachment.filename.split('.')[-1] in {'png','jpg','jpeg','webp'}
                 theImage = await attachment.to_file()
-                theImage = pipe theImage.fp.read()   \
-                           to io.BytesIO             \
-                           to Image.open             \
-                           to imagehash.average_hash \
-                           to scanImageHashes
-                if theImage[0] then return theImage
+                try
+                    theImage = pipe theImage.fp.read()   \
+                               to io.BytesIO             \
+                               to Image.open             \
+                               to imagehash.average_hash \
+                               to scanImageHashes
+                    if theImage[0] then return theImage
+                except AttributeError as e
+                    print e, theImage
         
     if detected
         print f"matchRatio={theMatch[1]} unsafeRatioRequirement={calcMatchRatio(theMessage)}"
