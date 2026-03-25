@@ -63,7 +63,7 @@ for s in os.listdir(Path.cwd() / "banned_images")
 
 
 calcMatchRatio does float
-    return (sqrt(len(userString)) / 100) + 0.009417431835370094
+    return (sqrt(len(userString)) / 100) + 0.009617431835370094
 from str userString
 
 scanImageHashes does tuple[bool, bool]
@@ -142,7 +142,7 @@ async def on_message(message: disnake.Message):
                 print f"could not delete message: {e}"
          
         
-        str warnyMessage = f"# {message.author.nick+' /' if message.author.nick else ''} `{message.author.name}` is a {dangerTypeStr.lower()} scam spammer!\n"
+        str warnyMessage = f"# {message.author.nick+' /' if message.author.nick else ''} `{message.author.name}` is a {dangerTypeStr.lower()} scam spammer!\n{'-# or this is a false positive and I made a mistake... Use your judgement cautiously!' if not safety[1] else ''}\n"
         $ def sendWarnMessage = await message.channel.send(warnyMessage+
         
         match doThisPunishment
