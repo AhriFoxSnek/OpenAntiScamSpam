@@ -59,7 +59,7 @@ for s in os.listdir(Path.cwd() / "banned_messages")
 "Hashing banned images ..."
 for s in os.listdir(Path.cwd() / "banned_images")
     with Image.open(Path.cwd() / 'banned_images'  / s, 'r') as f
-        badImages  = badStrings + (imagehash.average_hash(f),)
+        badImages  = badImages + (imagehash.average_hash(f),)
 
 
 calcMatchRatio does float
@@ -99,15 +99,12 @@ async scanMessage does bool
         for attachment in message.attachments
             if attachment.filename.split('.')[-1] in {'png','jpg','jpeg','webp'}
                 theImage = await attachment.to_file()
-                try
-                    theImage = pipe theImage.fp.read()   \
-                               to io.BytesIO             \
-                               to Image.open             \
-                               to imagehash.average_hash \
-                               to scanImageHashes
-                    if theImage[0] then return theImage
-                except AttributeError as e
-                    print e, theImage
+                theImage = pipe theImage.fp.read()   \
+                           to io.BytesIO             \
+                           to Image.open             \
+                           to imagehash.average_hash \
+                           to scanImageHashes
+                if theImage[0] then return theImage
         
     if detected
         print f"matchRatio={theMatch[1]} unsafeRatioRequirement={calcMatchRatio(theMessage)}"
