@@ -63,7 +63,7 @@ for s in os.listdir(Path.cwd() / "banned_images")
 
 
 calcMatchRatio does float
-    return sqrt(len(userString)) / 100
+    return (sqrt(len(userString)) / 100) + 0.009417431835370094
 from str userString
 
 scanImageHashes does tuple[bool, bool]
@@ -123,6 +123,7 @@ async def on_ready():
 
 @bot.event
 async def on_message(message: disnake.Message):
+    global amount_of_detections
     # Ignore messages from the bot itself to prevent loops
     if message.author is bot.user then return
     safety = await scanMessage(message)
