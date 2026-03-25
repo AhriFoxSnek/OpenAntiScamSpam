@@ -63,7 +63,7 @@ for s in os.listdir(Path.cwd() / "banned_images")
 
 
 calcMatchRatio does float
-    return (sqrt(len(userString)) / 100) + 0.009617431835370094
+    return max((sqrt(len(userString)) / 100) - 0.009617431835370094, 0)
 from str userString
 
 scanImageHashes does tuple[bool, bool]
