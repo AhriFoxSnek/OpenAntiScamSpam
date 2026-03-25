@@ -23,3 +23,15 @@ And then to run the bot:
 ASnake -r main.asnake
 ```
 
+## How to configure?
+
+In `main.asnake` there is a section like this:
+```py
+# config
+str likely___Punishment = 'warn' # nothing, warn, mute, kick, ban
+str dangerousPunishment = 'warn'
+bool deleteLikelyMessage    False
+bool deleteDangerousMessage True
+```
+You can set punishment as nothing, warn, mute, kick, or ban depending on if the message is labeled likely-dangerous, or dangerous.
+`deleteLikelyMessage` and `deleteDangerousMessage` control if the offending message is deleted after punishment.
