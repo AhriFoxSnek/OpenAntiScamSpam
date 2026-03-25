@@ -1,0 +1,5 @@
+Pillow
+disnake
+rapidfuzz
+imagehash
+python-dotenv

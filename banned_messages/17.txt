@@ -1,0 +1,6 @@
+Hey builders
+I hope everyone doing very well.
+I am a software engineer specialized on full stack ai and mobile app development with over 10 years of experience.
+My main filed is frontend and backend, web and mobile app development, API integrations and AI chatbots and AI assistants, AI agents, MCP,  DevOps and AWS, CI/CD pipeline and so on.
+And I used to languages and framworks such as React/NextJS, Node.js/Express, React Native, Flutter, Python, C++, .Net, Pytorch, Tensoflow and so on for development
+If you are a responsible individual looking for a capable and accountable engineer to handle everything from MVP to demo implementation and release entirely on your own, please contact me.
