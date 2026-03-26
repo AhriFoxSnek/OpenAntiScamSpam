@@ -1,1 +1,0 @@
-https://discord.com/oauth2/authorize?client_id=1360198864694415431&redirect_uri=https://restorecord.com/api/callback&response_type=code&scope=identify+guilds.join&state=834420870012600363&prompt=none @everyone
