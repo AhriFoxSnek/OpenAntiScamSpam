@@ -53,9 +53,8 @@ tuple[str] badStrings = ()
 tuple      badImages  = ()
 
 "Loading banned messages ... "
-for s in os.listdir(Path.cwd() / "banned_messages")
-    with       open(Path.cwd() / 'banned_messages' / s, 'r') as f
-        badStrings = badStrings + (applyRegexToString(f.read()),)
+with open('banned_messages.txt', 'r') as f
+    badStrings = tuple([text to applyRegexToString for text in f.read().split('\n== next scam spam ==\n')])
 "Hashing banned images ..."
 for s in os.listdir(Path.cwd() / "banned_images")
     with Image.open(Path.cwd() / 'banned_images'  / s, 'r') as f
