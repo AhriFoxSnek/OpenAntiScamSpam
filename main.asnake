@@ -1,5 +1,4 @@
 from pathlib import Path
-from math import sqrt
 from datetime import timedelta
 import re
 import os
@@ -62,7 +61,7 @@ for s in os.listdir(Path.cwd() / "banned_images")
 
 
 calcMatchRatio does float
-    return max((sqrt(len(userString)) / 100) - 0.009617431835370094, 0)
+    return ((len(userString) / 2000) ** 1.5) * 0.25
 from str userString
 
 scanImageHashes does tuple[bool, bool]
