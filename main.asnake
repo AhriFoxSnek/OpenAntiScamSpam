@@ -8,22 +8,33 @@ import io
 import disnake
 from disnake.ext import commands
 from disnake import Forbidden
-from rapidfuzz import process, fuzz
-from rapidfuzz.distance import JaroWinkler
+
 from PIL import Image
 import imagehash
+
+
+# config start
+const str textmatch_backend   = "tfidf" # tfidf, fuzz
+const str likely___Punishment = 'warn'  # nothing, warn, mute, kick, ban
+const str dangerousPunishment = 'warn'  # nothing, warn, mute, kick, ban
+const bool deleteLikelyMessage    False
+const bool deleteDangerousMessage True
+# config end
+
+
+
+if textmatch_backend "tfidf"
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    import numpy as np
+else
+    from rapidfuzz import process, fuzz
+    from rapidfuzz.distance import JaroWinkler
 
 intents = disnake.Intents.default()
 intents.message_content = True
 intents.messages = True
 intents.guilds = True
-
-# config
-str likely___Punishment = 'warn' # nothing, warn, mute, kick, ban
-str dangerousPunishment = 'warn'
-bool deleteLikelyMessage    False
-bool deleteDangerousMessage True
-
 
 const int amount_of_detections = int(open("amount_of_detections.txt",'r').read())
 
@@ -62,6 +73,33 @@ for s in os.listdir(Path.cwd() / "banned_images")
     with Image.open(Path.cwd() / 'banned_images'  / s, 'r') as f
         badImages  = badImages + (imagehash.average_hash(f),)
 
+if textmatch_backend "tfidf"
+    # TF-IDF matrix
+    vectorizer = TfidfVectorizer(
+        analyzer='word',
+        ngram_range=(1, 2),
+        min_df=1,
+        strip_accents='unicode',
+        lowercase=True
+    )
+    corpus_matrix = vectorizer.fit_transform(badStrings)
+
+
+def scanTFIDF(theMessage: str) -> tuple[bool, bool]:
+    float:
+        const LIKELY_THRESHOLD    = 0.75
+        const DANGEROUS_THRESHOLD = 0.90
+
+    vec = vectorizer.transform([theMessage])
+    scores = cosine_similarity(vec, corpus_matrix)
+    best = float(np.max(scores))
+    print(f"tfidf_score={best:.4f} dangerous_threshold={DANGEROUS_THRESHOLD} likely_threshold={LIKELY_THRESHOLD}")
+    if best >= DANGEROUS_THRESHOLD:
+        return (True, True)   # dangerous
+    if best >= LIKELY_THRESHOLD:
+        return (True, False)  # likely
+    return (False, False)     # safe
+
 
 calcMatchRatio does float
     return ((len(userString) / 2000) ** 1.5) * 0.25
@@ -91,9 +129,13 @@ async scanMessage does bool
     # dangerous link in message
     if any of bannedLinks are in theMessage then detected True
     
-    theMatch = process.extractOne(theMessage, badStrings, scorer=JaroWinkler.distance) 
     # matching a text
-    if not detected and theMatch[1] <= calcMatchRatio(theMessage) then detected True
+    if textmatch_backend 'fuzz'
+        theMatch = process.extractOne(theMessage, badStrings, scorer=JaroWinkler.distance) 
+        if not detected and theMatch[1] <= calcMatchRatio(theMessage) then detected True
+    else
+        result = scanTFIDF(theMessage)
+        if result[0] then return result
         
     if not detected and message.attachments
         # image scan
