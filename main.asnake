@@ -39,7 +39,7 @@ intents.guilds = True
 const int amount_of_detections = int(open("amount_of_detections.txt",'r').read())
 
 RETelegramUsername = re.compile(r"@[a-zA-z0-9]{5,}")
-REDiscordLink = re.compile(r"(?:https?:\/\/)?(?:(?:discord\.gg)|(?:discordapp\.com\/invite))\/[0-9a-zA-Z]{7,}")
+REDiscordLink = re.compile(r"(?:https?:\/\/)?(?:(?:(?:discord)?\.gg)|(?:discordapp\.com\/invite))\/[0-9a-zA-Z]{7,}")
 REPhoneNumber = re.compile(r"(?:(?:\+\d{1,2}\s*)|\s)\(?(?:\d[ \t_]*){3}\)?[\-‑]?\s*(?:\d[ \t_]*){3}[\-‑]? *(?:\d[ \t_]*){4}\s")
 const tuple RECompiles = (
         (RETelegramUsername, '@Suspicious_Username'),
