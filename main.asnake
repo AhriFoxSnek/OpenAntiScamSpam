@@ -43,7 +43,6 @@ if not isinstance(deleteDangerousMessage, bool)
 if textmatch_backend "tfidf"
     from sklearn.feature_extraction.text import TfidfVectorizer
     from sklearn.metrics.pairwise import cosine_similarity
-    import numpy as np
 else
     from rapidfuzz import process, fuzz
     from rapidfuzz.distance import JaroWinkler
@@ -106,7 +105,7 @@ def scanTFIDF(theMessage: str) -> tuple[bool, bool]:
         const DANGEROUS_THRESHOLD = 0.90
 
     scores = cosine_similarity(vectorizer.transform([theMessage]), corpus_matrix)
-    best = float(np.max(scores))
+    best = scores.max()
     print(f"tfidf_score={best:.4f} dangerous_threshold={DANGEROUS_THRESHOLD} likely_threshold={LIKELY_THRESHOLD}")
     if   best >= DANGEROUS_THRESHOLD then return (True,  True)   # dangerous
     elif best >= LIKELY_THRESHOLD    then return (True,  False)  # likely
