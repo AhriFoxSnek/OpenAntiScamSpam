@@ -56,21 +56,19 @@ intents.guilds = True
 const int amount_of_detections = int(open("amount_of_detections.txt",'r').read())
 
 RETelegramUsername = re.compile(r"@[a-zA-z0-9]{5,}")
-REDiscordLink = re.compile(r"(?:https?:\/\/)?(?:(?:(?:discord)?\.gg)|(?:discordapp\.com\/invite))\/[0-9a-zA-Z]{7,}")
-REPhoneNumber = re.compile(r"(?:(?:\+\d{1,2}\s*)|\s)\(?(?:\d[ \t_]*){3}\)?[\-‑]?\s*(?:\d[ \t_]*){3}[\-‑]? *(?:\d[ \t_]*){4}\s")
+REDiscordLink  = re.compile(r"(?:https?:\/\/)?(?:(?:(?:discord)?\.gg)|(?:discordapp\.com\/invite))\/[0-9a-zA-Z]{7,}")
+REPhoneNumber  = re.compile(r"(?:(?:\+\d{1,2}\s*)|\s)\(?(?:\d[ \t_]*){3}\)?[\-‑]?\s*(?:\d[ \t_]*){3}[\-‑]? *(?:\d[ \t_]*){4}\s")
+RETelegramLink = re.compile(r"(?:https?:\/\/)?t.me\/.*")
 const tuple RECompiles = (
-        (RETelegramUsername, '@Suspicious_Username'),
+        (RETelegramUsername, '@SuspiciousUsername'),
         (REDiscordLink,      'discord.gg/1A2b3cD4'),
-        (REPhoneNumber,      '555-123-456')
+        (REPhoneNumber,      '555-123-456'),
+        (RETelegramLink,     't.me/suspiciousLink')
    )
-
-const set bannedLinks = { 
-                          "steanmnscommunity.com",
-                          "greyapp.page.link",
-                          "restorecord.com",
-                          "easypeasy.bot",
-                          "nitroshop.cc"
-                         }
+with open('banned_domains.txt', 'r') as f
+    const set bannedLinks = set(f.read().split('\n'))
+    # got most of the links from:
+    # https://github.com/TermuxHackz/scam-links
 
 applyRegexToString does str
     loop RECompiles regex
@@ -137,7 +135,7 @@ async scanMessage does bool
     # True  = unsafe
     # False = safe
     const str theMessage = message.content to applyRegexToString
-    
+    theMatch = None
     bool detected False
     
     # dangerous link in message
@@ -165,7 +163,7 @@ async scanMessage does bool
         
     if detected
         print f"matchRatio={theMatch[1]} unsafeRatioRequirement={calcMatchRatio(theMessage)}"
-        if theMatch[1] <= PERFECT_MATCH then return True, True # dangerous
+        if theMatch and theMatch[1] <= PERFECT_MATCH then return True, True # dangerous
         return True, False # unlikely
     return False, False # safe
 from message
