@@ -3,6 +3,7 @@ from datetime import timedelta
 import re
 import os
 import io
+import json
 
 # 3rd party
 import disnake
@@ -12,14 +13,30 @@ from disnake import Forbidden
 from PIL import Image
 import imagehash
 
+dict config
+with open('config.json', 'r') as f
+    config = json.loads(f.read())
 
-# config start
-const str textmatch_backend   = "tfidf" # tfidf, fuzz
-const str likely___Punishment = 'warn'  # nothing, warn, mute, kick, ban
-const str dangerousPunishment = 'warn'  # nothing, warn, mute, kick, ban
-const bool deleteLikelyMessage    False
-const bool deleteDangerousMessage True
-# config end
+
+const str textmatch_backend       = config['textmatch_backend']
+const str likely___Punishment     = config['likely___Punishment']
+const str dangerousPunishment     = config['dangerousPunishment']
+const bool deleteLikelyMessage    = config['deleteLikelyMessage']
+const bool deleteDangerousMessage = config['deleteDangerousMessage']
+
+
+$ def error = "Invalid value in config.\n"
+if  textmatch_backend not in {'tfidf','fuzz'}
+    $error+"Possible values for textmatch_backend are: tfidf, fuzz"
+if likely___Punishment not in {'nothing','warn', 'mute', 'kick', 'ban'}
+    $error+"Possible values for likely___Punishment are: nothing, warn, mute, kick, ban"
+if dangerousPunishment not in {'nothing','warn', 'mute', 'kick', 'ban'}
+    $error+"Possible values for dangerousPunishment are: nothing, warn, mute, kick, ban"
+if not isinstance(   deleteLikelyMessage, bool)
+    $error+"Possible values for deleteLikelyMessage are: true, false"
+if not isinstance(deleteDangerousMessage, bool)
+    $error+"Possible values for deleteDangerousMessage are: true, false"
+
 
 
 
@@ -76,29 +93,26 @@ for s in os.listdir(Path.cwd() / "banned_images")
 if textmatch_backend "tfidf"
     # TF-IDF matrix
     vectorizer = TfidfVectorizer(
-        analyzer='word',
-        ngram_range=(1, 2),
-        min_df=1,
-        strip_accents='unicode',
-        lowercase=True
-    )
+                        analyzer='word',
+                        ngram_range=(1, 2),
+                        min_df=1,
+                        strip_accents='unicode',
+                        lowercase=True
+                  )
     corpus_matrix = vectorizer.fit_transform(badStrings)
 
 
 def scanTFIDF(theMessage: str) -> tuple[bool, bool]:
     float:
-        const LIKELY_THRESHOLD    = 0.75
+        const LIKELY_THRESHOLD    = 0.76
         const DANGEROUS_THRESHOLD = 0.90
 
-    vec = vectorizer.transform([theMessage])
-    scores = cosine_similarity(vec, corpus_matrix)
+    scores = cosine_similarity(vectorizer.transform([theMessage]), corpus_matrix)
     best = float(np.max(scores))
     print(f"tfidf_score={best:.4f} dangerous_threshold={DANGEROUS_THRESHOLD} likely_threshold={LIKELY_THRESHOLD}")
-    if best >= DANGEROUS_THRESHOLD:
-        return (True, True)   # dangerous
-    if best >= LIKELY_THRESHOLD:
-        return (True, False)  # likely
-    return (False, False)     # safe
+    if   best >= DANGEROUS_THRESHOLD then return (True,  True)   # dangerous
+    elif best >= LIKELY_THRESHOLD    then return (True,  False)  # likely
+    else                                  return (False, False)  # safe
 
 
 calcMatchRatio does float
@@ -174,6 +188,7 @@ async def on_message(message: disnake.Message):
         str dangerTypeStr = 'Dangerous' if safety[1] else 'Likely'
         print f"{dangerTypeStr} match found!"
         print f"{message.author} {message.author.id}"
+        print message.content
         
         str doThisPunishment = likely___Punishment
         if safety[1]
