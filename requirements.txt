@@ -4,4 +4,3 @@ rapidfuzz
 imagehash
 python-dotenv
 scikit-learn
-numpy
