@@ -1,0 +1,7 @@
+{
+"textmatch_backend":      "tfidf",
+"likely___Punishment":    "warn",
+"dangerousPunishment":    "warn",
+"deleteLikelyMessage":     false,
+"deleteDangerousMessage":  true
+}
