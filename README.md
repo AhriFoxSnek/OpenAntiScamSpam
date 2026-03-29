@@ -25,13 +25,17 @@ ASnake -r main.asnake
 
 ## How to configure?
 
-In `main.asnake` there is a section like this:
+In the `config.json` file there is a section like this:
 ```py
-# config
-str likely___Punishment = 'warn' # nothing, warn, mute, kick, ban
-str dangerousPunishment = 'warn'
-bool deleteLikelyMessage    False
-bool deleteDangerousMessage True
+{
+"textmatch_backend":      "tfidf",
+"likely___Punishment":    "warn",
+"dangerousPunishment":    "warn",
+"deleteLikelyMessage":     false,
+"deleteDangerousMessage":  true
+}
 ```
-You can set punishment as nothing, warn, mute, kick, or ban depending on if the message is labeled likely-dangerous, or dangerous.
-`deleteLikelyMessage` and `deleteDangerousMessage` control if the offending message is deleted after punishment.
+
+*textmatch_backend* possible values are `tfidf` (which is more accurate) and `fuzz` (which is more performant).
+*likely___Punishment* and *dangerousPunishment* possible values are `nothing`, `warn`, `mute`, `kick`, or `ban`, which applies that punishment to the offending user depending on if the message is likely to be a scam, or very likely (dangerous).
+*deleteLikelyMessage* and *deleteDangerousMessage* determine if the offending post gets automatically deleted or not. Their possible values are `true` and `false`.
