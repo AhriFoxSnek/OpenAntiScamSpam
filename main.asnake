@@ -78,13 +78,16 @@ applyRegexToString does str
     return theMsg
 from str theMsg
 
-
+  set[str] badInvites = set()
 tuple[str] badStrings = ()
 tuple      badImages  = ()
+
 
 "Loading banned messages ... "
 with open('banned_messages.txt', 'r', encoding='utf-8') as f
     badStrings = tuple([text to applyRegexToString for text in f.read().split('\n== next scam spam ==\n')])
+with open('banned_invites.txt',  'r', encoding='utf-8') as f
+    badInvites = f.read().split('\n') into set
 "Hashing banned images ..."
 for s in os.listdir(Path.cwd() / "banned_images")
     with Image.open(Path.cwd() / 'banned_images'  / s, 'r') as f
@@ -123,11 +126,12 @@ from str userString
 scanImageHashes does tuple[bool, bool]
     loop badImages NewHash
         if OGHash - NewHash < 5
+            if debug then print f"imageHash = {OGHash - NewHash}"
             if OGHash - NewHash == 0
                 return (True, True) # dangerous
             return (True, False) # likely
     return (False, False) # safe
-from OGHash
+from OGHash, bool debug = True
 
 
 
@@ -143,6 +147,11 @@ async scanMessage does bool
     
     # dangerous link in message
     if any of bannedLinks are in theMessage then detected True
+    
+    # bad invite in message
+    for link in re.findall(REDiscordLink, message.content)
+        if link.split('/')[-1] in badInvites
+            detected True ; break
     
     # matching a text
     if textmatch_backend 'fuzz'
@@ -165,8 +174,9 @@ async scanMessage does bool
                 if theImage[0] then return theImage
         
     if detected
-        print f"matchRatio={theMatch[1]} unsafeRatioRequirement={calcMatchRatio(theMessage)}"
-        if theMatch and theMatch[1] <= PERFECT_MATCH then return True, True # dangerous
+        if textmatch_backend 'fuzz'
+            print f"matchRatio={theMatch[1]} unsafeRatioRequirement={calcMatchRatio(theMessage)}"
+            if theMatch[1] <= PERFECT_MATCH then return True, True # dangerous
         return True, False # unlikely
     return False, False # safe
 from message
