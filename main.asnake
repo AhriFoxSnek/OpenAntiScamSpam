@@ -69,6 +69,9 @@ with open('banned_domains.txt', 'r') as f
     # got most of the links from:
     # https://github.com/TermuxHackz/scam-links
 
+const str SUS_LLM_CHARACTERS = "—◦–“’”"
+
+
 applyRegexToString does str
     loop RECompiles regex
         theMsg = re.sub(regex[0], regex[1], theMsg)
@@ -106,7 +109,7 @@ def scanTFIDF(theMessage: str) -> tuple[bool, bool]:
 
     scores = cosine_similarity(vectorizer.transform([theMessage]), corpus_matrix)
     best = scores.max()
-    loop "—◦–“’”" c if c in theMessage then best+=0.05 # likely LLM generated message
+    loop SUS_LLM_CHARACTERS c if c in theMessage then best+=0.05 # likely LLM generated message
     print(f"tfidf_score={best:.4f} dangerous_threshold={DANGEROUS_THRESHOLD} likely_threshold={LIKELY_THRESHOLD}")
     if   best >= DANGEROUS_THRESHOLD then return (True,  True)   # dangerous
     elif best >= LIKELY_THRESHOLD    then return (True,  False)  # likely
@@ -180,7 +183,7 @@ async def on_ready():
 async def on_message(message: disnake.Message):
     global amount_of_detections
     # Ignore messages from the bot itself to prevent loops
-    if message.author is bot.user then return
+    if message.author is bot.user or message.author.bot then return
     safety = await scanMessage(message)
     if safety[0]:
         str dangerTypeStr = 'Dangerous' if safety[1] else 'Likely'
