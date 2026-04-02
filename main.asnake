@@ -9,6 +9,7 @@ import json
 import disnake
 from disnake.ext import commands
 from disnake import Forbidden
+import tldextract
 
 from PIL import Image
 import imagehash
@@ -64,8 +65,9 @@ const tuple RECompiles = (
         (REPhoneNumber,      '555-123-456'),
         (RETelegramLink,     't.me/suspiciousLink')
    )
+const set bannedLinks
 with open('banned_domains.txt', 'r') as f
-    const set bannedLinks = set(f.read().split('\n'))
+    bannedLinks = set(f.read().split('\n'))
     # got most of the links from:
     # https://github.com/TermuxHackz/scam-links
 
@@ -145,8 +147,11 @@ async scanMessage does bool
     theMatch = None
     bool detected False
     
-    # dangerous link in message
-    if any of bannedLinks are in theMessage then detected True
+    
+    detected = any(
+        f"{ext.domain}.{ext.suffix}" in bannedLinks
+        for ext in map(tldextract.extract, theMessage.split())
+    )
     
     # bad invite in message
     for link in re.findall(REDiscordLink, message.content)
