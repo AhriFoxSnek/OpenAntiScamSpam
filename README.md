@@ -30,12 +30,17 @@ In the `config.json` file there is a section like this:
 {
 "textmatch_backend":      "tfidf",
 "likely___Punishment":    "warn",
-"dangerousPunishment":    "warn",
+"dangerousPunishment":    "mute",
 "deleteLikelyMessage":     false,
-"deleteDangerousMessage":  true
+"deleteDangerousMessage":  true,
+"tooManyChannelsSpammed":  3,
+"stopPayingAttentionToUserAfterThisAmountOfSeconds": 30,
+"debugUsers": [270149861398151169]
 }
 ```
 
-*textmatch_backend* possible values are `tfidf` (which is more accurate) and `fuzz` (which is more performant).
-*likely___Punishment* and *dangerousPunishment* possible values are `nothing`, `warn`, `mute`, `kick`, or `ban`, which applies that punishment to the offending user depending on if the message is likely to be a scam, or very likely (dangerous).
-*deleteLikelyMessage* and *deleteDangerousMessage* determine if the offending post gets automatically deleted or not. Their possible values are `true` and `false`.
+- *textmatch_backend* possible values are `tfidf` (which is more accurate) and `fuzz` (which is more performant).
+- *likely___Punishment* and *dangerousPunishment* possible values are `nothing`, `warn`, `mute`, `kick`, or `ban`, which applies that punishment to the offending user depending on if the message is likely to be a scam, or very likely (dangerous).
+- *deleteLikelyMessage* and *deleteDangerousMessage* determine if the offending post gets automatically deleted or not. Their possible values are `true` and `false`.
+- *tooManyChannelsSpammed* is the number of channels needed to be spammed in by a user within a certain timeframe for a likely match to be elevated to dangerous. This value needs an integer.
+- *stopPayingAttentionToUserAfterThisAmountOfSeconds* is the timeframe where the bot will pay attention to if a user will send messages in other channels, which can lead to *tooManyChannelsSpammed* and thus a likely match being elevated to a dangerous one. This value needs an integer.
