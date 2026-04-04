@@ -1,7 +1,8 @@
 {
 "textmatch_backend":      "tfidf",
 "likely___Punishment":    "warn",
-"dangerousPunishment":    "warn",
+"dangerousPunishment":    "mute",
 "deleteLikelyMessage":     false,
-"deleteDangerousMessage":  true
+"deleteDangerousMessage":  true,
+"debugUsers": [270149861398151169]
 }
