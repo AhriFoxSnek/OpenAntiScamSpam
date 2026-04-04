@@ -20,12 +20,14 @@ with open('config.json', 'r') as f
     config = json.loads(f.read())
 
 
-const str textmatch_backend       = config['textmatch_backend']
-const str likely___Punishment     = config['likely___Punishment']
-const str dangerousPunishment     = config['dangerousPunishment']
+const str  textmatch_backend      = config['textmatch_backend']
+const str  likely___Punishment    = config['likely___Punishment']
+const str  dangerousPunishment    = config['dangerousPunishment']
 const bool deleteLikelyMessage    = config['deleteLikelyMessage']
 const bool deleteDangerousMessage = config['deleteDangerousMessage']
 const set  debugUsers             = config['debugUsers'] into set
+const int  tooManyChannelsSpammed = config['tooManyChannelsSpammed']
+const int  stopPayingAttentionToUserAfterThisAmountOfSeconds = config['stopPayingAttentionToUserAfterThisAmountOfSeconds']
 
 
 $ def error = "Invalid value in config.\n"
@@ -39,7 +41,10 @@ if not isinstance(   deleteLikelyMessage, bool)
     $error+"Possible values for deleteLikelyMessage are: true, false"
 if not isinstance(deleteDangerousMessage, bool)
     $error+"Possible values for deleteDangerousMessage are: true, false"
-
+if not isinstance(tooManyChannelsSpammed, int)
+    $error+"Possible values for tooManyChannelsSpammed are: any integer"
+if not isinstance(stopPayingAttentionToUserAfterThisAmountOfSeconds, int)
+    $error+"Possible values for stopPayingAttentionToUserAfterThisAmountOfSeconds are: any integer"
 
 
 
@@ -98,8 +103,7 @@ for s in os.listdir(Path.cwd() / "banned_images")
         badImages  = badImages + (imagehash.average_hash(f),)
 
 
-const int stopPayingAttentionAfterThisAmountOfSeconds 30
-const int tooManyChannelsSpammed 3
+
 dict payAttentionToUserTimeout = {}
 dict[list[int]] channelsUserHasMessaged = {}
 
@@ -270,7 +274,7 @@ async def on_message(message: disnake.Message):
                 f.write(str(++amount_of_detections))
     
     if $userID not in channelsUserHasMessaged
-        payAttentionToUserTimeout[$userID]   = [time.monotonic() + stopPayingAttentionAfterThisAmountOfSeconds, 1]
+        payAttentionToUserTimeout[$userID]   = [time.monotonic() + stopPayingAttentionToUserAfterThisAmountOfSeconds, 1]
         channelsUserHasMessaged[$userID]     = [message.channel]
     else
         if message.channel not in channelsUserHasMessaged[$userID]
