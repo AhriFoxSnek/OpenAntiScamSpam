@@ -4,6 +4,7 @@ import re
 import os
 import io
 import json
+import time
 
 # 3rd party
 import disnake
@@ -24,6 +25,7 @@ const str likely___Punishment     = config['likely___Punishment']
 const str dangerousPunishment     = config['dangerousPunishment']
 const bool deleteLikelyMessage    = config['deleteLikelyMessage']
 const bool deleteDangerousMessage = config['deleteDangerousMessage']
+const set  debugUsers             = config['debugUsers'] into set
 
 
 $ def error = "Invalid value in config.\n"
@@ -95,6 +97,14 @@ for s in os.listdir(Path.cwd() / "banned_images")
     with Image.open(Path.cwd() / 'banned_images'  / s, 'r') as f
         badImages  = badImages + (imagehash.average_hash(f),)
 
+
+const int stopPayingAttentionAfterThisAmountOfSeconds 30
+const int tooManyChannelsSpammed 3
+dict payAttentionToUserTimeout = {}
+dict[list[int]] channelsUserHasMessaged = {}
+
+
+
 if textmatch_backend "tfidf"
     # TF-IDF matrix
     vectorizer = TfidfVectorizer(
@@ -147,7 +157,7 @@ async scanMessage does bool
     theMatch = None
     bool detected False
     
-    
+    # bad link in message
     detected = any(
         f"{ext.domain}.{ext.suffix}" in bannedLinks
         for ext in map(tldextract.extract, theMessage.split())
@@ -199,16 +209,28 @@ async def on_message(message: disnake.Message):
     global amount_of_detections
     # Ignore messages from the bot itself to prevent loops
     if message.author is bot.user or message.author.bot then return
+    
+    $ inline userID = message.author.id
     safety = await scanMessage(message)
     if safety[0]:
         str dangerTypeStr = 'Dangerous' if safety[1] else 'Likely'
         print f"{dangerTypeStr} match found!"
         print f"{message.author} {message.author.id}"
+        print "______"
         print message.content
+        print "______"
+        
+        if $userID in channelsUserHasMessaged \
+        and message.channel not in channelsUserHasMessaged[$userID] \
+        and payAttentionToUserTimeout[$userID][1] >= tooManyChannelsSpammed \
+            # user has spammed a bunch, theyre probably dangerous
+            safety = (True, True) ; print "\tThey are such a spammer ... "
         
         str doThisPunishment = likely___Punishment
         if safety[1]
             doThisPunishment = dangerousPunishment
+        if $userID in debugUsers
+            doThisPunishment = 'warn'
             
         if deleteLikelyMessage or (safety[1] and deleteDangerousMessage)
             try await message.delete()
@@ -240,9 +262,24 @@ async def on_message(message: disnake.Message):
                 $sendWarnMessage "They were banned.")
             except Forbidden
                 $sendWarnMessage "I am missing permission to ban.")
-                
-        with open("amount_of_detections.txt",'w') as f:
-            f.write(str(++amount_of_detections))
+        
+        if $userID not in debugUsers  
+            with open("amount_of_detections.txt",'w') as f
+                #++amount_of_detections to str to f.write
+                # ^ ASnake bug, go fix Ahri.
+                f.write(str(++amount_of_detections))
+    
+    if $userID not in channelsUserHasMessaged
+        payAttentionToUserTimeout[$userID]   = [time.monotonic() + stopPayingAttentionAfterThisAmountOfSeconds, 1]
+        channelsUserHasMessaged[$userID]     = [message.channel]
+    else
+        if message.channel not in channelsUserHasMessaged[$userID]
+            channelsUserHasMessaged[$userID].append(message.channel)
+            payAttentionToUserTimeout[$userID][1] += 1
+        if time.monotonic() >= payAttentionToUserTimeout[$userID][0]
+            del payAttentionToUserTimeout[$userID]
+            del channelsUserHasMessaged[$userID]
+        
             
     await bot.process_commands(message)
 
