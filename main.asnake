@@ -62,10 +62,10 @@ intents.guilds = True
 
 const int amount_of_detections = int(open("amount_of_detections.txt",'r').read())
 
-RETelegramUsername = re.compile(r"@[a-zA-z0-9]{5,}")
+RETelegramUsername = re.compile(r"@[a-zA-z0-9_.]{5,}")
 REDiscordLink  = re.compile(r"(?:https?:\/\/)?(?:(?:(?:discord)?\.?gg)|(?:discordapp\.com(?:\/|\\)invite))\/[0-9a-zA-Z]{7,}")
 REPhoneNumber  = re.compile(r"(?:(?:\+\d{1,2}\s*)|\s)\(?(?:\d[ \t_]*){3}\)?[\-‑]?\s*(?:\d[ \t_]*){3}[\-‑]? *(?:\d[ \t_]*){4}\s")
-RETelegramLink = re.compile(r"(?:https?:\/\/)?t.me\/.*")
+RETelegramLink = re.compile(r"(?:https?:\/\/)?t.me\/.+")
 const tuple RECompiles = (
         (RETelegramUsername, '@SuspiciousUsername'),
         (REDiscordLink,      'discord.gg/1A2b3cD4'),
@@ -78,7 +78,7 @@ with open('banned_domains.txt', 'r') as f
     # got most of the links from:
     # https://github.com/TermuxHackz/scam-links
 
-const str SUS_LLM_CHARACTERS = "—◦–“’”"
+const str SUS_LLM_CHARACTERS = "—◦–“’”→"
 
 
 applyRegexToString does str
@@ -128,7 +128,13 @@ def scanTFIDF(theMessage: str) -> tuple[bool, bool]:
 
     scores = cosine_similarity(vectorizer.transform([theMessage]), corpus_matrix)
     best = scores.max()
-    loop SUS_LLM_CHARACTERS c if c in theMessage then best+=0.05 # likely LLM generated message
+    
+    # small signals
+    if theMessage[:2] is '# '    then best += 0.1 # makes message huge
+    if '@everyone' in theMessage then best += 0.1 # spammers like everyones attention
+    loop SUS_LLM_CHARACTERS c # likely LLM generated message
+        if c in theMessage       then best += 0.05 
+    
     print(f"tfidf_score={best:.4f} dangerous_threshold={DANGEROUS_THRESHOLD} likely_threshold={LIKELY_THRESHOLD}")
     if   best >= DANGEROUS_THRESHOLD then return (True,  True)   # dangerous
     elif best >= LIKELY_THRESHOLD    then return (True,  False)  # likely
