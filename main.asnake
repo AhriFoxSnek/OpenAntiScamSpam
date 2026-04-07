@@ -66,11 +66,13 @@ RETelegramUsername = re.compile(r"@[a-zA-z0-9_.]{5,}")
 REDiscordLink  = re.compile(r"(?:https?:\/\/)?(?:(?:(?:discord)?\.?gg)|(?:discordapp\.com(?:\/|\\)invite))\/[0-9a-zA-Z]{7,}")
 REPhoneNumber  = re.compile(r"(?:(?:\+\d{1,2}\s*)|\s)\(?(?:\d[ \t_]*){3}\)?[\-‑]?\s*(?:\d[ \t_]*){3}[\-‑]? *(?:\d[ \t_]*){4}\s")
 RETelegramLink = re.compile(r"(?:https?:\/\/)?t.me\/.+")
+REDollarAmount = re.compile(r"\$(?:[1-9]\d{0,3}?,)?\d+(?:\.\d)?[kK]?\+?")
 const tuple RECompiles = (
         (RETelegramUsername, '@SuspiciousUsername'),
         (REDiscordLink,      'discord.gg/1A2b3cD4'),
         (REPhoneNumber,      '555-123-456'),
-        (RETelegramLink,     't.me/suspiciousLink')
+        (RETelegramLink,     't.me/suspiciousLink'),
+        (REDollarAmount,     '-$9999K')
    )
 const set bannedLinks
 with open('banned_domains.txt', 'r') as f
