@@ -11,9 +11,9 @@ import disnake
 from disnake.ext import commands
 from disnake import Forbidden
 import tldextract
-
 from PIL import Image
 import imagehash
+
 
 dict config
 with open('config.json', 'r') as f
@@ -100,7 +100,7 @@ with open('banned_invites.txt',  'r', encoding='utf-8') as f
 "Hashing banned images ..."
 for s in os.listdir(Path.cwd() / "banned_images")
     with Image.open(Path.cwd() / 'banned_images'  / s, 'r') as f
-        badImages  = badImages + (imagehash.average_hash(f),)
+        badImages  = badImages + (imagehash.phash(f),)
 
 
 
@@ -160,43 +160,45 @@ async scanMessage does bool
     bool detected False
     float sus = 0.0
     
-     # small signals that make a message sus
-    if theMessage[:2] is '# '    then sus += 0.1 # makes message huge
-    if '@everyone' in theMessage then sus += 0.1 # spammers like everyones attention
-    loop SUS_LLM_CHARACTERS c # likely LLM generated message
-        if c in theMessage       then sus += 0.05 
-    
-    # bad invite in message
-    for link in re.findall(REDiscordLink, theMessage)
-        if link.split('/')[-1] in badInvites
-            detected True ; break
-    
-    
-    theMessage = theMessage to applyRegexToString # anonymize for better matches
-    
-    # bad link in message
-    detected = any(
-        f"{ext.domain}.{ext.suffix}" in bannedLinks
-        for ext in map(tldextract.extract, theMessage.split())
-    )
-    
-    # matching a text
-    if textmatch_backend 'fuzz'
-        theMatch = process.extractOne(theMessage, badStrings, scorer=JaroWinkler.distance)[1] - sus
-        if not detected and theMatch <= calcMatchRatio(theMessage) then detected True
-    else
-        result = scanTFIDF(theMessage, sus)
-        if result[0] then return result
+    # if there is no text, no need to scan the text of the message
+    if theMessage
+         # small signals that make a message sus
+        if theMessage[:2] is '# '    then sus += 0.1 # makes message huge
+        if '@everyone' in theMessage then sus += 0.1 # spammers like everyones attention
+        loop SUS_LLM_CHARACTERS c # likely LLM generated message
+            if c in theMessage       then sus += 0.05 
         
+        # bad invite in message
+        for link in re.findall(REDiscordLink, theMessage)
+            if link.split('/')[-1] in badInvites
+                detected True ; break
+        
+        
+        theMessage = theMessage to applyRegexToString # anonymize for better matches
+        
+        # bad link in message
+        detected = any(
+            f"{ext.domain}.{ext.suffix}" in bannedLinks
+            for ext in map(tldextract.extract, theMessage.split())
+        )
+        
+        # matching a text
+        if textmatch_backend 'fuzz'
+            theMatch = process.extractOne(theMessage, badStrings, scorer=JaroWinkler.distance)[1] - sus
+            if not detected and theMatch <= calcMatchRatio(theMessage) then detected True
+        else
+            result = scanTFIDF(theMessage, sus)
+            if result[0] then return result
+        
+    # image scan
     if not detected and message.attachments
-        # image scan
         for attachment in message.attachments
             if attachment.filename.split('.')[-1] in {'png','jpg','jpeg','webp'}
                 theImage = await attachment.to_file()
                 theImage = pipe theImage.fp.read()   \
                            to io.BytesIO             \
                            to Image.open             \
-                           to imagehash.average_hash \
+                           to imagehash.phash \
                            to scanImageHashes
                 if theImage[0] then return theImage
         
