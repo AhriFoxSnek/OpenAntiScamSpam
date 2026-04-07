@@ -121,19 +121,13 @@ if textmatch_backend "tfidf"
     corpus_matrix = vectorizer.fit_transform(badStrings)
 
 
-def scanTFIDF(theMessage: str) -> tuple[bool, bool]:
+def scanTFIDF(theMessage: str, addSus: float = 0.0) -> tuple[bool, bool]:
     float:
         const LIKELY_THRESHOLD    = 0.76
         const DANGEROUS_THRESHOLD = 0.90
 
     scores = cosine_similarity(vectorizer.transform([theMessage]), corpus_matrix)
-    best = scores.max()
-    
-    # small signals
-    if theMessage[:2] is '# '    then best += 0.1 # makes message huge
-    if '@everyone' in theMessage then best += 0.1 # spammers like everyones attention
-    loop SUS_LLM_CHARACTERS c # likely LLM generated message
-        if c in theMessage       then best += 0.05 
+    best = scores.max() + addSus
     
     print(f"tfidf_score={best:.4f} dangerous_threshold={DANGEROUS_THRESHOLD} likely_threshold={LIKELY_THRESHOLD}")
     if   best >= DANGEROUS_THRESHOLD then return (True,  True)   # dangerous
@@ -158,14 +152,27 @@ from OGHash, bool debug = True
 
 
 
-const float PERFECT_MATCH 0.0
-
 async scanMessage does bool
     # True  = unsafe
     # False = safe
-    const str theMessage = message.content to applyRegexToString
-    theMatch = None
+    const str theMessage = message.content
+    float theMatch = None
     bool detected False
+    float sus = 0.0
+    
+     # small signals that make a message sus
+    if theMessage[:2] is '# '    then sus += 0.1 # makes message huge
+    if '@everyone' in theMessage then sus += 0.1 # spammers like everyones attention
+    loop SUS_LLM_CHARACTERS c # likely LLM generated message
+        if c in theMessage       then sus += 0.05 
+    
+    # bad invite in message
+    for link in re.findall(REDiscordLink, theMessage)
+        if link.split('/')[-1] in badInvites
+            detected True ; break
+    
+    
+    theMessage = theMessage to applyRegexToString # anonymize for better matches
     
     # bad link in message
     detected = any(
@@ -173,17 +180,12 @@ async scanMessage does bool
         for ext in map(tldextract.extract, theMessage.split())
     )
     
-    # bad invite in message
-    for link in re.findall(REDiscordLink, message.content)
-        if link.split('/')[-1] in badInvites
-            detected True ; break
-    
     # matching a text
     if textmatch_backend 'fuzz'
-        theMatch = process.extractOne(theMessage, badStrings, scorer=JaroWinkler.distance) 
-        if not detected and theMatch[1] <= calcMatchRatio(theMessage) then detected True
+        theMatch = process.extractOne(theMessage, badStrings, scorer=JaroWinkler.distance)[1] - sus
+        if not detected and theMatch <= calcMatchRatio(theMessage) then detected True
     else
-        result = scanTFIDF(theMessage)
+        result = scanTFIDF(theMessage, sus)
         if result[0] then return result
         
     if not detected and message.attachments
@@ -201,7 +203,7 @@ async scanMessage does bool
     if detected
         if textmatch_backend 'fuzz'
             print f"matchRatio={theMatch[1]} unsafeRatioRequirement={calcMatchRatio(theMessage)}"
-            if theMatch[1] <= PERFECT_MATCH then return True, True # dangerous
+            if theMatch <= 0.0 then return True, True # dangerous
         return True, False # unlikely
     return False, False # safe
 from message
