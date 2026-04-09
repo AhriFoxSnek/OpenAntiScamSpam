@@ -5,6 +5,7 @@ import os
 import io
 import json
 import time
+import random
 
 # 3rd party
 import disnake
@@ -92,6 +93,7 @@ from str theMsg
   set[str] badInvites = set()
 tuple[str] badStrings = ()
 tuple      badImages  = ()
+list       botPostedWarnings = []
 
 
 "Loading banned messages ... "
@@ -224,7 +226,10 @@ async def on_ready():
 async def on_message(message: disnake.Message):
     global amount_of_detections
     # Ignore messages from the bot itself to prevent loops
-    if message.author is bot.user or message.author.bot then return
+    if message.author.bot then return
+    if message.author.id is 842801092962025492 and random.randint(0,10) == 0
+        message.channel.send("Hey scrat! STOP scratting!!") ; return
+        # this is a joke pls remove this
     
     $ inline userID = message.author.id
     safety = await scanMessage(message)
@@ -255,7 +260,7 @@ async def on_message(message: disnake.Message):
          
         
         str warnyMessage = f"# {message.author.nick+' /' if message.author.nick else ''} `{message.author.name}` is a {dangerTypeStr.lower()} scam spammer!\n{'-# or this is a false positive and I made a mistake... Use your judgement cautiously!' if not safety[1] else ''}\n"
-        $ def sendWarnMessage = await message.channel.send(warnyMessage+
+        $ def sendWarnMessage =  msg is await message.channel.send(warnyMessage+
         
         match doThisPunishment
         of 'nothing' do nothing
@@ -279,7 +284,8 @@ async def on_message(message: disnake.Message):
             except Forbidden
                 $sendWarnMessage "I am missing permission to ban.")
         
-        if $userID not in debugUsers  
+        botPostedWarnings.append(msg)
+        if safety[1] and $userID not in debugUsers 
             with open("amount_of_detections.txt",'w') as f
                 ++amount_of_detections to str to f.write
     
@@ -296,6 +302,32 @@ async def on_message(message: disnake.Message):
         
             
     await bot.process_commands(message)
+
+
+# slash command section
+
+$ def send = await inter.response.send_message
+
+@bot.slash_command(description="Delete the bots warning messages it has posted recently.")
+async def delete_warnings(inter):
+    global botPostedWarnings
+    if inter.author.id not in debugUsers
+        $send("You are not allowed to run this command.")
+    loop botPostedWarnings msg
+        await msg.delete()
+    $send(f"Deleted {botPostedWarnings to len} warnings.")
+    botPostedWarnings = []
+    
+    
+@bot.slash_command(description="Shows latency of the bot.")
+async def ping(inter):
+  int botLatency = round(bot.latency * 1000)
+  match botLatency
+  of <= 50  do embed=disnake.Embed(title="PING", description=f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!", color= 0x44ff44)
+  of <= 100 do embed=disnake.Embed(title="PING", description=f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!", color= 0xffd000)
+  of <= 200 do embed=disnake.Embed(title="PING", description=f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!", color= 0xff6600)
+  else         embed=disnake.Embed(title="PING", description=f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!", color= 0x990000)
+  $send(embed=embed)
 
 from dotenv import load_dotenv ; load_dotenv()
 bot.run(os.getenv('DISCORD_BOT_TOKEN'))
