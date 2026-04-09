@@ -80,7 +80,7 @@ with open('banned_domains.txt', 'r') as f
     # got most of the links from:
     # https://github.com/TermuxHackz/scam-links
 
-const str SUS_LLM_CHARACTERS = "—◦–“’”→"
+const str SUS_LLM_CHARACTERS = "—◦–“’”→…"
 
 
 applyRegexToString does str
@@ -200,7 +200,7 @@ async scanMessage does bool
                 theImage = pipe theImage.fp.read()   \
                            to io.BytesIO             \
                            to Image.open             \
-                           to imagehash.phash \
+                           to imagehash.phash        \
                            to scanImageHashes
                 if theImage[0] then return theImage
         
@@ -281,9 +281,7 @@ async def on_message(message: disnake.Message):
         
         if $userID not in debugUsers  
             with open("amount_of_detections.txt",'w') as f
-                #++amount_of_detections to str to f.write
-                # ^ ASnake bug, go fix Ahri.
-                f.write(str(++amount_of_detections))
+                ++amount_of_detections to str to f.write
     
     if $userID not in channelsUserHasMessaged
         payAttentionToUserTimeout[$userID]   = [time.monotonic() + stopPayingAttentionToUserAfterThisAmountOfSeconds, 1]
