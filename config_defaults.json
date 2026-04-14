@@ -1,0 +1,9 @@
+{
+"likely___Punishment":    "warn",
+"dangerousPunishment":    "mute",
+"deleteLikelyMessage":     false,
+"deleteDangerousMessage":  true,
+"tooManyChannelsSpammed":  3,
+"stopPayingAttentionToUserAfterThisAmountOfSeconds": 30,
+"debugUsers": [270149861398151169]
+}
