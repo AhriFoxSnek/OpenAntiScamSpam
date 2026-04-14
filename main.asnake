@@ -14,47 +14,17 @@ from disnake import Forbidden
 import tldextract
 from PIL import Image
 import imagehash
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 
-dict config
-with open('config.json', 'r') as f
-    config = json.loads(f.read())
-
-
-const str  textmatch_backend      = config['textmatch_backend']
-const str  likely___Punishment    = config['likely___Punishment']
-const str  dangerousPunishment    = config['dangerousPunishment']
-const bool deleteLikelyMessage    = config['deleteLikelyMessage']
-const bool deleteDangerousMessage = config['deleteDangerousMessage']
-const set  debugUsers             = config['debugUsers'] into set
-const int  tooManyChannelsSpammed = config['tooManyChannelsSpammed']
-const int  stopPayingAttentionToUserAfterThisAmountOfSeconds = config['stopPayingAttentionToUserAfterThisAmountOfSeconds']
-
-
-$ def error = "Invalid value in config.\n"
-if  textmatch_backend not in {'tfidf','fuzz'}
-    $error+"Possible values for textmatch_backend are: tfidf, fuzz"
-if likely___Punishment not in {'nothing','warn', 'mute', 'kick', 'ban'}
-    $error+"Possible values for likely___Punishment are: nothing, warn, mute, kick, ban"
-if dangerousPunishment not in {'nothing','warn', 'mute', 'kick', 'ban'}
-    $error+"Possible values for dangerousPunishment are: nothing, warn, mute, kick, ban"
-if not isinstance(   deleteLikelyMessage, bool)
-    $error+"Possible values for deleteLikelyMessage are: true, false"
-if not isinstance(deleteDangerousMessage, bool)
-    $error+"Possible values for deleteDangerousMessage are: true, false"
-if not isinstance(tooManyChannelsSpammed, int)
-    $error+"Possible values for tooManyChannelsSpammed are: any integer"
-if not isinstance(stopPayingAttentionToUserAfterThisAmountOfSeconds, int)
-    $error+"Possible values for stopPayingAttentionToUserAfterThisAmountOfSeconds are: any integer"
-
-
-
-if textmatch_backend "tfidf"
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.metrics.pairwise import cosine_similarity
-else
-    from rapidfuzz import process, fuzz
-    from rapidfuzz.distance import JaroWinkler
+dict default_config
+with open('config_defaults.json', 'r') as f
+    default_config = json.loads(f.read())
+$ def DB_FILE = "settings_database.json"
+dict server_database
+with open($DB_FILE, 'r') as f
+    server_database = json.loads(f.read())
 
 intents = disnake.Intents.default()
 intents.message_content = True
@@ -64,7 +34,7 @@ intents.guilds = True
 const int amount_of_detections = int(open("amount_of_detections.txt",'r').read())
 
 RETelegramUsername = re.compile(r"@[a-zA-z0-9_.]{5,}")
-REDiscordLink  = re.compile(r"(?:https?:\/\/)?(?:(?:(?:discord)?\.?gg)|(?:discordapp\.com(?:\/|\\)invite))\/[0-9a-zA-Z]{7,}")
+REDiscordLink  = re.compile(r"(?:https?:\/\/)?(?:(?:(?:discord)?\.?gg)|(?:discordapp\.com(?:\/|\\)invite))\/[0-9a-zA-Z\-]{7,}")
 REPhoneNumber  = re.compile(r"(?:(?:\+\d{1,2}\s*)|\s)\(?(?:\d[ \t_]*){3}\)?[\-‑]?\s*(?:\d[ \t_]*){3}[\-‑]? *(?:\d[ \t_]*){4}\s")
 RETelegramLink = re.compile(r"(?:https?:\/\/)?t.me\/.+")
 REDollarAmount = re.compile(r"\$(?:[1-9]\d{0,3}?,)?\d+(?:\.\d)?[kK]?\+?")
@@ -113,16 +83,16 @@ dict[list[int]] channelsUserHasMessaged = {}
 
 
 
-if textmatch_backend "tfidf"
-    # TF-IDF matrix
-    vectorizer = TfidfVectorizer(
-                        analyzer='word',
-                        ngram_range=(1, 2),
-                        min_df=1,
-                        strip_accents='unicode',
-                        lowercase=True
-                  )
-    corpus_matrix = vectorizer.fit_transform(badStrings)
+
+# TF-IDF matrix
+vectorizer = TfidfVectorizer(
+                    analyzer='word',
+                    ngram_range=(1, 2),
+                    min_df=1,
+                    strip_accents='unicode',
+                    lowercase=True
+              )
+corpus_matrix = vectorizer.fit_transform(badStrings)
 
 
 def scanTFIDF(theMessage: str, addSus: float = 0.0) -> tuple[bool, bool]:
@@ -138,10 +108,6 @@ def scanTFIDF(theMessage: str, addSus: float = 0.0) -> tuple[bool, bool]:
     elif best >= LIKELY_THRESHOLD    then return (True,  False)  # likely
     else                                  return (False, False)  # safe
 
-
-calcMatchRatio does float
-    return ((len(userString) / 2000) ** 1.5) * 0.25
-from str userString
 
 scanImageHashes does tuple[bool, bool]
     loop badImages NewHash
@@ -186,13 +152,8 @@ async scanMessage does bool
             for ext in map(tldextract.extract, theMessage.split())
         )
         
-        # matching a text
-        if textmatch_backend 'fuzz'
-            theMatch = process.extractOne(theMessage, badStrings, scorer=JaroWinkler.distance)[1] - sus
-            if not detected and theMatch <= calcMatchRatio(theMessage) then detected True
-        else
-            result = scanTFIDF(theMessage, sus)
-            if result[0] then return result
+        result = scanTFIDF(theMessage, sus)
+        if result[0] then return result
         
     # image scan
     if not detected and message.attachments
@@ -207,9 +168,6 @@ async scanMessage does bool
                 if theImage[0] then return theImage
         
     if detected
-        if textmatch_backend 'fuzz'
-            print f"matchRatio={theMatch[1]} unsafeRatioRequirement={calcMatchRatio(theMessage)}"
-            if theMatch <= 0.0 then return True, True # dangerous
         return True, False # unlikely
     return False, False # safe
 from message
@@ -240,6 +198,22 @@ async def on_message(message: disnake.Message):
         print "______"
         print message.content
         print "______"
+        
+        
+        dict config
+        if message.guild.id to str in server_database
+            config = server_database[message.guild.id to str]
+        else
+            config = default_config
+        const str  likely___Punishment    = config['likely___Punishment']
+        const str  dangerousPunishment    = config['dangerousPunishment']
+        const bool deleteLikelyMessage    = config['deleteLikelyMessage']
+        const bool deleteDangerousMessage = config['deleteDangerousMessage']
+        const int  tooManyChannelsSpammed = config['tooManyChannelsSpammed']
+        const set  debugUsers             = default_config['debugUsers'] into set
+        const int  stopPayingAttentionToUserAfterThisAmountOfSeconds = config['stopPayingAttentionToUserAfterThisAmountOfSeconds']
+        
+        
         
         if $userID in channelsUserHasMessaged \
         and message.channel not in channelsUserHasMessaged[$userID] \
@@ -290,8 +264,11 @@ async def on_message(message: disnake.Message):
                 ++amount_of_detections to str to f.write
     
     if $userID not in channelsUserHasMessaged
-        payAttentionToUserTimeout[$userID]   = [time.monotonic() + stopPayingAttentionToUserAfterThisAmountOfSeconds, 1]
-        channelsUserHasMessaged[$userID]     = [message.channel]
+        if message.guild.id to str in server_database
+            payAttentionToUserTimeout[$userID] = [time.monotonic() + server_database[str(message.guild.id)]['stopPayingAttentionToUserAfterThisAmountOfSeconds'], 1]
+        else
+            payAttentionToUserTimeout[$userID] = [time.monotonic() + default_config['stopPayingAttentionToUserAfterThisAmountOfSeconds'], 1]
+        channelsUserHasMessaged[$userID]       = [message.channel]
     else
         if message.channel not in channelsUserHasMessaged[$userID]
             channelsUserHasMessaged[$userID].append(message.channel)
@@ -328,6 +305,38 @@ async def ping(inter):
   of <= 200 do embed=disnake.Embed(title="PING", description=f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!", color= 0xff6600)
   else         embed=disnake.Embed(title="PING", description=f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!", color= 0x990000)
   $send(embed=embed)
+
+
+@bot.slash_command(description="Update settings. Parameters left blank will be set to the default.")
+@commands.has_permissions(manage_guild=True)
+async def change_settings(
+    inter,
+    likely_punishment: str                                 = commands.Param(default=default_config['likely___Punishment'],    choices=['nothing','warn','mute','kick','ban']),
+    dangerous_punishment: str                              = commands.Param(default=default_config['dangerousPunishment'],    choices=['nothing','warn','mute','kick','ban']),
+    delete_likely: bool                                    = commands.Param(default=default_config['deleteLikelyMessage'],    choices=[True, False]),
+    delete_dangerous: bool                                 = commands.Param(default=default_config['deleteDangerousMessage'], choices=[True, False]),
+    channels_spammed: commands.Range[int, 2, 20]           = default_config['tooManyChannelsSpammed'],
+    forget_after_seconds: commands.Range[int, 1, 99999999] = default_config['stopPayingAttentionToUserAfterThisAmountOfSeconds']
+):
+    global server_database
+    dict db = json.load(open($DB_FILE)) if os.path.exists($DB_FILE) else {}
+
+    dict updates = {
+        "likely___Punishment":                               likely_punishment,
+        "dangerousPunishment":                               dangerous_punishment,
+        "deleteLikelyMessage":                               delete_likely,
+        "deleteDangerousMessage":                            delete_dangerous,
+        "tooManyChannelsSpammed":                            channels_spammed,
+        "stopPayingAttentionToUserAfterThisAmountOfSeconds": forget_after_seconds
+    }
+    
+    try
+        db[inter.guild_id to str] = updates
+        json.dump(db, open($DB_FILE, "w"))
+        server_database = db
+        await inter.send(f"Settings successfully updated!\n```json\n{updates}```")
+    except Exception as e
+        await inter.send(f"Settings update failed:\n{e}")
 
 from dotenv import load_dotenv ; load_dotenv()
 bot.run(os.getenv('DISCORD_BOT_TOKEN'))
