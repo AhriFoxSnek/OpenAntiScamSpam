@@ -25,7 +25,7 @@ ASnake -r main.asnake
 
 ## How to configure?
 
-In the `config.json` file there is a section like this:
+In the `config_defaults.json` file there is a section like this:
 ```py
 {
 "textmatch_backend":      "tfidf",
@@ -44,3 +44,6 @@ In the `config.json` file there is a section like this:
 - *deleteLikelyMessage* and *deleteDangerousMessage* determine if the offending post gets automatically deleted or not. Their possible values are `true` and `false`.
 - *tooManyChannelsSpammed* is the number of channels needed to be spammed in by a user within a certain timeframe for a likely match to be elevated to dangerous. This value needs an integer.
 - *stopPayingAttentionToUserAfterThisAmountOfSeconds* is the timeframe where the bot will pay attention to if a user will send messages in other channels, which can lead to *tooManyChannelsSpammed* and thus a likely match being elevated to a dangerous one. This value needs an integer.
+- *debugUsers* is a list of user ids which will not be punished when detected, for use of testing the scam spam matcher.
+
+Changing `config_defaults.json` will change the default for all Discords with the bot. To change it for a specific user, use the `/change_settings` command.
