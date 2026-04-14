@@ -1,19 +1,19 @@
 from pathlib import Path
 from datetime import timedelta
+from io import BytesIO
+from time import monotonic
 import re
 import os
-import io
 import json
-import time
 import random
 
 # 3rd party
+import imagehash
 import disnake
 from disnake.ext import commands
 from disnake import Forbidden
-import tldextract
+from tldextract import extract
 from PIL import Image
-import imagehash
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -100,8 +100,7 @@ def scanTFIDF(theMessage: str, addSus: float = 0.0) -> tuple[bool, bool]:
         const LIKELY_THRESHOLD    = 0.76
         const DANGEROUS_THRESHOLD = 0.90
 
-    scores = cosine_similarity(vectorizer.transform([theMessage]), corpus_matrix)
-    best = scores.max() + addSus
+    best = cosine_similarity(vectorizer.transform([theMessage]), corpus_matrix).max() + addSus
     
     print(f"tfidf_score={best:.4f} dangerous_threshold={DANGEROUS_THRESHOLD} likely_threshold={LIKELY_THRESHOLD}")
     if   best >= DANGEROUS_THRESHOLD then return (True,  True)   # dangerous
@@ -140,8 +139,7 @@ async scanMessage does bool
         
         # bad invite in message
         for link in re.findall(REDiscordLink, theMessage)
-            if link.split('/')[-1] in badInvites
-                detected True ; break
+            if link.split('/')[-1] in badInvites then detected True ; break
         
         
         theMessage = theMessage to applyRegexToString # anonymize for better matches
@@ -149,7 +147,7 @@ async scanMessage does bool
         # bad link in message
         detected = any(
             f"{ext.domain}.{ext.suffix}" in bannedLinks
-            for ext in map(tldextract.extract, theMessage.split())
+            for ext in map(extract, theMessage.split())
         )
         
         result = scanTFIDF(theMessage, sus)
@@ -161,7 +159,7 @@ async scanMessage does bool
             if attachment.filename.split('.')[-1] in {'png','jpg','jpeg','webp'}
                 theImage = await attachment.to_file()
                 theImage = pipe theImage.fp.read()   \
-                           to io.BytesIO             \
+                           to BytesIO                \
                            to Image.open             \
                            to imagehash.phash        \
                            to scanImageHashes
@@ -186,7 +184,7 @@ async def on_message(message: disnake.Message):
     # Ignore messages from the bot itself to prevent loops
     if message.author.bot then return
     if message.author.id is 842801092962025492 and random.randint(0,10) == 0
-        message.channel.send("Hey scrat! STOP scratting!!") ; return
+        await message.channel.send("Hey scrat! STOP scratting!!") ; return
         # this is a joke pls remove this
     
     $ inline userID = message.author.id
@@ -265,15 +263,15 @@ async def on_message(message: disnake.Message):
     
     if $userID not in channelsUserHasMessaged
         if message.guild.id to str in server_database
-            payAttentionToUserTimeout[$userID] = [time.monotonic() + server_database[str(message.guild.id)]['stopPayingAttentionToUserAfterThisAmountOfSeconds'], 1]
+            payAttentionToUserTimeout[$userID] = [monotonic() + server_database[str(message.guild.id)]['stopPayingAttentionToUserAfterThisAmountOfSeconds'], 1]
         else
-            payAttentionToUserTimeout[$userID] = [time.monotonic() + default_config['stopPayingAttentionToUserAfterThisAmountOfSeconds'], 1]
+            payAttentionToUserTimeout[$userID] = [monotonic() + default_config['stopPayingAttentionToUserAfterThisAmountOfSeconds'], 1]
         channelsUserHasMessaged[$userID]       = [message.channel]
     else
         if message.channel not in channelsUserHasMessaged[$userID]
             channelsUserHasMessaged[$userID].append(message.channel)
             payAttentionToUserTimeout[$userID][1] += 1
-        if time.monotonic() >= payAttentionToUserTimeout[$userID][0]
+        if monotonic() >= payAttentionToUserTimeout[$userID][0]
             del payAttentionToUserTimeout[$userID]
             del channelsUserHasMessaged[$userID]
         
@@ -334,9 +332,9 @@ async def change_settings(
         db[inter.guild_id to str] = updates
         json.dump(db, open($DB_FILE, "w"))
         server_database = db
-        await inter.send(f"Settings successfully updated!\n```json\n{updates}```")
+        $send(f"Settings successfully updated!\n```json\n{updates}```")
     except Exception as e
-        await inter.send(f"Settings update failed:\n{e}")
+        $send(f"Settings update failed:\n{e}")
 
 from dotenv import load_dotenv ; load_dotenv()
 bot.run(os.getenv('DISCORD_BOT_TOKEN'))
