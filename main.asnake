@@ -18,13 +18,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-dict default_config
-with open('config_defaults.json', 'r') as f
-    default_config = json.loads(f.read())
-$ def DB_FILE = "settings_database.json"
-dict server_database
-with open($DB_FILE, 'r') as f
-    server_database = json.loads(f.read())
+
 
 intents = disnake.Intents.default()
 intents.message_content = True
@@ -45,11 +39,7 @@ const tuple RECompiles = (
         (RETelegramLink,     't.me/suspiciousLink'),
         (REDollarAmount,     '-$9999K')
    )
-const set bannedLinks
-with open('banned_domains.txt', 'r') as f
-    bannedLinks = set(f.read().split('\n'))
-    # got most of the links from:
-    # https://github.com/TermuxHackz/scam-links
+
 
 const str SUS_LLM_CHARACTERS = "—◦–“’”→…"
 
@@ -60,18 +50,44 @@ applyRegexToString does str
     return theMsg
 from str theMsg
 
+
+dict default_config
+with open('config_defaults.json', 'r') as f
+    default_config = json.loads(f.read())
+$ def DB_FILE = "settings_database.json"
+dict server_database
+with open($DB_FILE, 'r') as f
+    server_database = json.loads(f.read())
+
+
   set[str] badInvites = set()
 tuple[str] badStrings = ()
 tuple      badImages  = ()
 list       botPostedWarnings = []
+const set  bannedLinks
 
 
-"Loading banned messages ... "
+print "Loading banned messages ... "
+with open('banned_domains.txt', 'r') as f
+    bannedLinks = set(f.read().split('\n'))
+    # got most of the links from:
+    # https://github.com/TermuxHackz/scam-links
+
 with open('banned_messages.txt', 'r', encoding='utf-8') as f
     badStrings = tuple([text to applyRegexToString for text in f.read().split('\n== next scam spam ==\n')])
 with open('banned_invites.txt',  'r', encoding='utf-8') as f
-    badInvites = f.read().split('\n') into set
-"Hashing banned images ..."
+    badInvites = f.read().split('\n') into set    
+# TF-IDF matrix
+vectorizer = TfidfVectorizer(
+                    analyzer='word',
+                    ngram_range=(1, 2),
+                    min_df=1,
+                    strip_accents='unicode',
+                    lowercase=True
+              )
+corpus_matrix = vectorizer.fit_transform(badStrings)
+    
+print "Hashing banned images ..."
 for s in os.listdir(Path.cwd() / "banned_images")
     with Image.open(Path.cwd() / 'banned_images'  / s, 'r') as f
         badImages  = badImages + (imagehash.phash(f),)
@@ -82,19 +98,6 @@ dict payAttentionToUserTimeout = {}
 dict[list[int]] channelsUserHasMessaged = {}
 
 
-
-
-# TF-IDF matrix
-vectorizer = TfidfVectorizer(
-                    analyzer='word',
-                    ngram_range=(1, 2),
-                    min_df=1,
-                    strip_accents='unicode',
-                    lowercase=True
-              )
-corpus_matrix = vectorizer.fit_transform(badStrings)
-
-
 def scanTFIDF(theMessage: str, addSus: float = 0.0) -> tuple[bool, bool]:
     float:
         const LIKELY_THRESHOLD    = 0.76
@@ -102,7 +105,7 @@ def scanTFIDF(theMessage: str, addSus: float = 0.0) -> tuple[bool, bool]:
 
     best = cosine_similarity(vectorizer.transform([theMessage]), corpus_matrix).max() + addSus
     
-    print(f"tfidf_score={best:.4f} dangerous_threshold={DANGEROUS_THRESHOLD} likely_threshold={LIKELY_THRESHOLD}")
+    print(f"tfidf_score={best:.2f} dangerous_threshold={DANGEROUS_THRESHOLD} likely_threshold={LIKELY_THRESHOLD}")
     if   best >= DANGEROUS_THRESHOLD then return (True,  True)   # dangerous
     elif best >= LIKELY_THRESHOLD    then return (True,  False)  # likely
     else                                  return (False, False)  # safe
@@ -171,6 +174,7 @@ async scanMessage does bool
 from message
 
 
+print "Logging in ..."
 bot = commands.Bot(command_prefix='oASS!', intents=intents, activity=disnake.CustomActivity(name=f"{amount_of_detections} scams stopped!"))
 
 @bot.event
@@ -181,9 +185,9 @@ async def on_ready():
 @bot.event
 async def on_message(message: disnake.Message):
     global amount_of_detections
-    # Ignore messages from the bot itself to prevent loops
+    # ignore messages bots
     if message.author.bot then return
-    if message.author.id is 842801092962025492 and random.randint(0,10) == 0
+    if message.author.id is 842801092962025492 and random.randint(0,20) == 0
         await message.channel.send("Hey scrat! STOP scratting!!") ; return
         # this is a joke pls remove this
     
@@ -283,11 +287,10 @@ async def on_message(message: disnake.Message):
 
 $ def send = await inter.response.send_message
 
+@commands.has_permissions(manage_messages=True)
 @bot.slash_command(description="Delete the bots warning messages it has posted recently.")
 async def delete_warnings(inter):
     global botPostedWarnings
-    if inter.author.id not in debugUsers
-        $send("You are not allowed to run this command.")
     loop botPostedWarnings msg
         await msg.delete()
     $send(f"Deleted {botPostedWarnings to len} warnings.")
@@ -297,11 +300,13 @@ async def delete_warnings(inter):
 @bot.slash_command(description="Shows latency of the bot.")
 async def ping(inter):
   int botLatency = round(bot.latency * 1000)
+  $ def pingPongDesc  = f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!"
+  $ def pingPongTitle =  "PING"
   match botLatency
-  of <= 50  do embed=disnake.Embed(title="PING", description=f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!", color= 0x44ff44)
-  of <= 100 do embed=disnake.Embed(title="PING", description=f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!", color= 0xffd000)
-  of <= 200 do embed=disnake.Embed(title="PING", description=f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!", color= 0xff6600)
-  else         embed=disnake.Embed(title="PING", description=f":ping_pong: Ping! The ping is **{botLatency}** milliseconds!", color= 0x990000)
+  of <= 50  do embed = disnake.Embed(title=$pingPongTitle, description=$pingPongDesc, color=0x44ff44)
+  of <= 100 do embed = disnake.Embed(title=$pingPongTitle, description=$pingPongDesc, color=0xffd000)
+  of <= 200 do embed = disnake.Embed(title=$pingPongTitle, description=$pingPongDesc, color=0xff6600)
+  else         embed = disnake.Embed(title=$pingPongTitle, description=$pingPongDesc, color=0x990000)
   $send(embed=embed)
 
 
