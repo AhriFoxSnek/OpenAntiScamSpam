@@ -329,6 +329,11 @@ async def ping(inter):
   else         embed = disnake.Embed(title=$pingPongTitle, description=$pingPongDesc, color=0x990000)
   $send(embed=embed)
 
+@bot.slash_command(description="Shuts down the bot. Only bot owner can use this.")
+@commands.is_owner()
+async def shutdown(inter):
+    $send("Shutting down...")
+    exit()
 
 @bot.slash_command(description="Update settings. Parameters left blank will be set to the default.")
 @commands.has_permissions(manage_guild=True)
