@@ -195,10 +195,11 @@ from message
 
 
 print "Logging in ..."
-bot = commands.Bot(command_prefix='oASS!', intents=intents, activity=disnake.CustomActivity(name=f"{amount_of_detections} scams stopped!"))
+bot = commands.Bot(command_prefix='oASS!', intents=intents)
 
 @bot.event
 async def on_ready():
+    await bot.change_presence(activity=disnake.CustomActivity(name=f"{amount_of_detections} scams stopped across {len(bot.guilds)} Discords."))
     f"Logged in as {bot.user}"
     "------"
 
