@@ -114,11 +114,11 @@ def scanTFIDF(theMessage: str, addSus: float = 0.0) -> tuple[bool, bool]:
         bad_score = cosine_similarity(bad_vectorizer.transform([theMessage]), badMatrix).max()
         score
         
-    if bad_score >= LIKELY_THRESHOLD
+    if 0.98 >= bad_score >= LIKELY_THRESHOLD
         float gud_score = cosine_similarity(gud_vectorizer.transform([theMessage]), gudMatrix).max()
         print f"{bad_score=} {gud_score=}"
-        if gud_score >= LIKELY_THRESHOLD
-            score = bad_score * (1 - gud_score) + addSus
+        if gud_score >= LIKELY_THRESHOLD and (gud_score+0.05) >= (bad_score+addSus)
+            score = 0
         else
             score = bad_score                   + addSus
     else
