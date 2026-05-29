@@ -4,3 +4,4 @@ imagehash
 python-dotenv
 scikit-learn
 tldextract
+requests
