@@ -3,7 +3,10 @@ A simple open-source Discord bot for detecting and handling scams being spammed.
 
 # How to Use?
 
-Create a [bot for Discord](https://discord.com/developers/applications), and go get it's token. Then invite the bot to whatever Discord you have control over.
+If you do not want to self-host this yourself, you can add the bot via this link:
+https://discord.com/oauth2/authorize?client_id=1485900929688535111
+
+Otherwise, create a [bot for Discord](https://discord.com/developers/applications), and go get it's token. Then invite the bot to whatever Discord you have control over.
 
 Create a `.env` file in the directory with:
 ```
