@@ -1,23 +1,23 @@
-from pathlib import Path
-from datetime import timedelta
-from io import BytesIO
-from time import monotonic
 import re
 import os
 import json
 import random
+from pathlib import Path
+from datetime import timedelta, datetime, timezone
+from io import BytesIO
+from time import monotonic
+from typing import Optional
 
 # 3rd party
 import imagehash
 import disnake
+import requests
 from disnake.ext import commands
-from disnake import Forbidden
+from disnake import Forbidden, TextChannel
 from tldextract import extract
 from PIL import Image
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
-
 
 
 intents = disnake.Intents.default()
@@ -56,15 +56,20 @@ with open('config_defaults.json', 'r') as f
     default_config = json.loads(f.read())
 $ def DB_FILE = "settings_database.json"
 dict server_database
-with open($DB_FILE, 'r') as f
-    server_database = json.loads(f.read())
+try
+    with open($DB_FILE, 'r') as f
+        server_database = json.loads(f.read())
+except FileNotFoundError
+    with open($DB_FILE, 'w') as f
+        f.write('{}')
+    server_database = dict()
 
 
   set[str] badInvites = set()
 tuple[str] badStrings = ()
 tuple[str] gudStrings = ()
 tuple      badImages  = ()
-list       botPostedWarnings = []
+dict[list] botPostedWarnings = {}
 const set  bannedLinks
 
 
@@ -235,7 +240,7 @@ async def on_message(message: disnake.Message):
         const int  tooManyChannelsSpammed = config['tooManyChannelsSpammed']
         const set  debugUsers             = default_config['debugUsers'] into set
         const int  stopPayingAttentionToUserAfterThisAmountOfSeconds = config['stopPayingAttentionToUserAfterThisAmountOfSeconds']
-        
+        const      logChannel             = config['logChannel']
         
         
         if $userID in channelsUserHasMessaged \
@@ -281,10 +286,30 @@ async def on_message(message: disnake.Message):
             except Forbidden
                 $sendWarnMessage "I am missing permission to ban.")
         
-        botPostedWarnings.append(msg)
+        if message.guild.id in botPostedWarnings
+            botPostedWarnings[message.guild.id].append(msg)
+        else
+            botPostedWarnings[message.guild.id] = [msg]
         if safety[1] and $userID not in debugUsers 
             with open("amount_of_detections.txt",'w') as f
                 ++amount_of_detections to str to f.write
+                
+        if logChannel
+            channel = bot.get_channel(logChannel)
+            await channel.send(f"{message.author.name} {message.author.id} in {message.channel.name} at {datetime.now(timezone.utc).astimezone().strftime('%Y-%m-%d %H:%M:%S %Z (%z)')}")
+            if message.attachments
+                list badAttachments = []
+                for attachment in message.attachments
+                    badAttachments.append(
+                        disnake.File(
+                            BytesIO(requests.get(attachment.url).content),
+                            filename=attachment.filename
+                        )
+                    )
+                await channel.send(message.content,files=badAttachments)
+                del badAttachments
+            else
+                await channel.send(message.content)
     
     if $userID not in channelsUserHasMessaged
         if message.guild.id to str in server_database
@@ -312,10 +337,14 @@ $ def send = await inter.response.send_message
 @bot.slash_command(description="Delete the bots warning messages it has posted recently.")
 async def delete_warnings(inter):
     global botPostedWarnings
-    loop botPostedWarnings msg
-        await msg.delete()
-    $send(f"Deleted {botPostedWarnings to len} warnings.")
-    botPostedWarnings = []
+    if message.guild.id in botPostedWarnings
+        for msg in botPostedWarnings[message.guild.id]
+            try await msg.delete()
+            except (disnake.errors.NotFound) do nothing
+        $send(f"Deleted {botPostedWarnings to len} warnings.")
+        botPostedWarnings[message.guild.id] = []
+    else
+        $send("No recent warnings for this guild. Ima sowry. =(")
     
     
 @bot.slash_command(description="Shows latency of the bot.")
@@ -345,7 +374,8 @@ async def change_settings(
     delete_likely: bool                                    = commands.Param(default=default_config['deleteLikelyMessage'],    choices=[True, False]),
     delete_dangerous: bool                                 = commands.Param(default=default_config['deleteDangerousMessage'], choices=[True, False]),
     channels_spammed: commands.Range[int, 2, 20]           = default_config['tooManyChannelsSpammed'],
-    forget_after_seconds: commands.Range[int, 1, 99999999] = default_config['stopPayingAttentionToUserAfterThisAmountOfSeconds']
+    forget_after_seconds: commands.Range[int, 1, 99999999] = default_config['stopPayingAttentionToUserAfterThisAmountOfSeconds'],
+    log_channel: Optional[TextChannel]                     = None
 ):
     global server_database
     dict db = json.load(open($DB_FILE)) if os.path.exists($DB_FILE) else {}
@@ -356,7 +386,8 @@ async def change_settings(
         "deleteLikelyMessage":                               delete_likely,
         "deleteDangerousMessage":                            delete_dangerous,
         "tooManyChannelsSpammed":                            channels_spammed,
-        "stopPayingAttentionToUserAfterThisAmountOfSeconds": forget_after_seconds
+        "stopPayingAttentionToUserAfterThisAmountOfSeconds": forget_after_seconds,
+        "logChannel":                                        log_channel.id,
     }
     
     try
