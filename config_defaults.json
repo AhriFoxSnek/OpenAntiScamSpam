@@ -5,5 +5,6 @@
 "deleteDangerousMessage":  true,
 "tooManyChannelsSpammed":  3,
 "stopPayingAttentionToUserAfterThisAmountOfSeconds": 30,
-"debugUsers": [270149861398151169]
+"debugUsers": [270149861398151169,1494955631352877150],
+"logsChannel": null
 }
