@@ -240,7 +240,10 @@ async def on_message(message: disnake.Message):
         const int  tooManyChannelsSpammed = config['tooManyChannelsSpammed']
         const set  debugUsers             = default_config['debugUsers'] into set
         const int  stopPayingAttentionToUserAfterThisAmountOfSeconds = config['stopPayingAttentionToUserAfterThisAmountOfSeconds']
-        const      logChannel             = config['logChannel']
+        try
+            const logChannel = config['logChannel']
+        except KeyError
+            const logChannel = None
         
         
         if $userID in channelsUserHasMessaged \
