@@ -340,12 +340,13 @@ $ def send = await inter.response.send_message
 @bot.slash_command(description="Delete the bots warning messages it has posted recently.")
 async def delete_warnings(inter):
     global botPostedWarnings
-    if message.guild.id in botPostedWarnings
-        for msg in botPostedWarnings[message.guild.id]
+    $ def guildID = inter.guild.id
+    if   $guildID in botPostedWarnings
+        for msg   in botPostedWarnings[$guildID]
             try await msg.delete()
             except (disnake.errors.NotFound) do nothing
         $send(f"Deleted {botPostedWarnings to len} warnings.")
-        botPostedWarnings[message.guild.id] = []
+        botPostedWarnings[$guildID] = []
     else
         $send("No recent warnings for this guild. Ima sowry. =(")
     
