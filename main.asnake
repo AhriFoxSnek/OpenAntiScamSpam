@@ -72,6 +72,8 @@ tuple      badImages  = ()
 dict[list] botPostedWarnings = {}
 const set  bannedLinks
 
+const set  debugUsers = default_config['debugUsers'] into set
+
 
 print "Loading banned messages ... "
 with open('banned_domains.txt', 'r') as f
@@ -238,7 +240,6 @@ async def on_message(message: disnake.Message):
         const bool deleteLikelyMessage    = config['deleteLikelyMessage']
         const bool deleteDangerousMessage = config['deleteDangerousMessage']
         const int  tooManyChannelsSpammed = config['tooManyChannelsSpammed']
-        const set  debugUsers             = default_config['debugUsers'] into set
         const int  stopPayingAttentionToUserAfterThisAmountOfSeconds = config['stopPayingAttentionToUserAfterThisAmountOfSeconds']
         try
             const logChannel = config['logChannel']
@@ -369,8 +370,20 @@ async def shutdown(inter):
     $send("Shutting down...")
     exit()
 
+
+def has_permissions(**perms) -> bool
+    $ pyfunc = on
+    original = commands.has_guild_permissions(**perms).predicate
+    async def extended_check(inter)
+        if inter.guild is None then return False
+        return await inter.bot.is_owner(inter.author) \
+        or           inter.author.id in debugUsers    \
+        or     await original(inter)
+    return commands.app_check(extended_check)
+    $ pyfunc = off
+
 @bot.slash_command(description="Update settings. Parameters left blank will be set to the default.")
-@commands.has_permissions(manage_guild=True)
+@has_permissions(manage_guild=True)
 async def change_settings(
     inter,
     likely_punishment: str                                 = commands.Param(default=default_config['likely___Punishment'],    choices=['nothing','warn','mute','kick','ban']),
