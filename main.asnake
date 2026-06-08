@@ -346,7 +346,7 @@ async def delete_warnings(inter):
         for msg   in botPostedWarnings[$guildID]
             try await msg.delete()
             except (disnake.errors.NotFound) do nothing
-        $send(f"Deleted {botPostedWarnings to len} warnings.")
+        $send(f"Deleted {len(botPostedWarnings[$guildID])} warnings.")
         botPostedWarnings[$guildID] = []
     else
         $send("No recent warnings for this guild. Ima sowry. =(")
