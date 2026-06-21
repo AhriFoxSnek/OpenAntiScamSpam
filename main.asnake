@@ -169,7 +169,7 @@ async scanMessage does bool
         
         # bad invite in message
         for link in re.findall(REDiscordLink, theMessage)
-            if link.split('/')[-1] in badInvites then detected True ; break
+            if link.split('/')[-1] in badInvites then return True, True # bad actor
         
         
         theMessage = theMessage to applyRegexToString # anonymize for better matches
@@ -215,8 +215,8 @@ async def on_message(message: disnake.Message):
     global amount_of_detections
     # ignore messages bots
     if message.author.bot then return
-    if message.author.id is 842801092962025492 and random.randint(0,20) == 0
-        await message.channel.send("Hey scrat! STOP scratting!!") ; return
+    if message.author.id is 842801092962025492 and random.randint(0,22) == 0
+        await message.channel.send(random.choice(["Hey scrat! STOP scratting!!","Maybe just a little scratting...","You can keep scratting just, ykno, tone it down a bit.","We need MORE scratting, try harder."])) ; return
         # this is a joke pls remove this
     
     $ inline userID = message.author.id
