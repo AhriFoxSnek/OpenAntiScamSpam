@@ -11,13 +11,12 @@ from typing import Optional
 # 3rd party
 import imagehash
 import disnake
-import requests
 from disnake.ext import commands
 from disnake import Forbidden, TextChannel
 from tldextract import extract
-from PIL import Image
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from PIL import Image
 
 
 intents = disnake.Intents.default()
@@ -61,7 +60,7 @@ try
         server_database = json.loads(f.read())
 except FileNotFoundError
     with open($DB_FILE, 'w') as f
-        f.write('{}')
+        json.dump({}, f)
     server_database = dict()
 
 
@@ -304,12 +303,7 @@ async def on_message(message: disnake.Message):
             if message.attachments
                 list badAttachments = []
                 for attachment in message.attachments
-                    badAttachments.append(
-                        disnake.File(
-                            BytesIO(requests.get(attachment.url).content),
-                            filename=attachment.filename
-                        )
-                    )
+                    badAttachments.append(await attachment.to_file())
                 await channel.send(message.content,files=badAttachments)
                 del badAttachments
             else
@@ -345,7 +339,7 @@ async def delete_warnings(inter):
     if   $guildID in botPostedWarnings
         for msg   in botPostedWarnings[$guildID]
             try await msg.delete()
-            except (disnake.errors.NotFound) do nothing
+            except (disnake.errors.NotFound) do nothing #ASnake bug, except doesnt use NotFound
         $send(f"Deleted {len(botPostedWarnings[$guildID])} warnings.")
         botPostedWarnings[$guildID] = []
     else
@@ -404,7 +398,7 @@ async def change_settings(
         "deleteDangerousMessage":                            delete_dangerous,
         "tooManyChannelsSpammed":                            channels_spammed,
         "stopPayingAttentionToUserAfterThisAmountOfSeconds": forget_after_seconds,
-        "logChannel":                                        log_channel.id,
+        "logChannel":                                        log_channel.id if log_channel else None,
     }
     
     try
