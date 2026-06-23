@@ -193,7 +193,8 @@ async scanMessage does bool
                            to Image.open             \
                            to imagehash.phash        \
                            to scanImageHashes
-                if theImage[0] then return theImage
+                if   theImage[1] then return theImage
+                elif theImage[0] then detected is True
         
     if detected
         return True, False # unlikely
