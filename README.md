@@ -1,6 +1,8 @@
 # OpenAntiScamSpam aka oASS
 A simple open-source Discord bot for detecting and handling scams being spammed.
 
+Make sure the bot is higher in the role list than normal users, so it is able to mute/kick/ban etc.
+
 # How to Use?
 
 If you do not want to self-host this yourself, you can add the bot via this link:
